@@ -142,40 +142,28 @@ const JournalTable = ({ transactions, setTransactions }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const handleSearch = (term) => {
-  // Add defensive checks
-  if (!term || typeof term !== 'string') return [];
-  
-  try {
-    const results = [];
-    Object.entries(accountStructure || {}).forEach(([classNum, classData]) => {
-      if (!classData || !classData.groups) return;
+      if (!term) return [];
       
-      Object.entries(classData.groups).forEach(([groupNum, groupData]) => {
-        if (!groupData || !groupData.accounts) return;
-        
-        Object.entries(groupData.accounts).forEach(([accountNum, accountData]) => {
-          if (accountNum === "ALL" || !accountData) return;
-          
-          if (accountNum.includes(term) ||
-              accountData.name.toLowerCase().includes(term.toLowerCase())) {
-            results.push({
-              number: accountNum,
-              name: accountData.name || '',
-              type: accountData.type || '',
-              kind: accountData.kind || '',
-              group: `${classData.name || ''} > ${groupData.name || ''}`
-            });
-          }
+      const results = [];
+      Object.entries(accountStructure).forEach(([classNum, classData]) => {
+        Object.entries(classData.groups).forEach(([groupNum, groupData]) => {
+          Object.entries(groupData.accounts).forEach(([accountNum, accountData]) => {
+            if (accountNum === "ALL") return;
+            if (
+              accountNum.startsWith(term) ||
+              accountData.name.toLowerCase().includes(term.toLowerCase())
+            ) {
+              results.push({
+                number: accountNum,
+                name: accountData.name,
+                type: accountData.type,
+                kind: accountData.kind,
+                group: `${classData.name} > ${groupData.name}`
+              });
+            }
+          });
         });
       });
-    });
-    
-    return results.slice(0, 10);
-  } catch (error) {
-    console.error('Error in handleSearch:', error);
-    return [];
-  }
-};
       
       // Sort results - exact matches first, then starts with, then contains
       return results
@@ -284,33 +272,10 @@ const JournalTable = ({ transactions, setTransactions }) => {
                   <TableRow>
                     <TableCell>
                       <Input
-  value={value}
-  onChange={(e) => {
-    try {
-      const newValue = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
-      onChange(id, field, newValue);
-      const newSuggestions = handleSearch(newValue);
-      setSuggestions(newSuggestions || []);
-      setIsOpen(Boolean(newValue));
-    } catch (error) {
-      console.error('Error in input change:', error);
-      setSuggestions([]);
-      setIsOpen(false);
-    }
-  }}
-  onFocus={() => {
-    try {
-      setSuggestions(handleSearch(value) || []);
-      setIsOpen(Boolean(value));
-    } catch (error) {
-      console.error('Error on focus:', error);
-      setSuggestions([]);
-      setIsOpen(false);
-    }
-  }}
-  className="w-full pr-8"
-  placeholder="Účet"
-/>
+                        type="date"
+                        value={transaction.date}
+                        onChange={(e) => updateTransaction(transaction.id, 'date', e.target.value)}
+                      />
                     </TableCell>
                     <TableCell>
                       <Input
