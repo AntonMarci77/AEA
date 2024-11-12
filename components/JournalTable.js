@@ -39,6 +39,9 @@ const JournalTable = ({ transactions, setTransactions }) => {
   // Find account in structure
   const findAccount = (accountNumber) => {
     if (!accountNumber) return null;
+    // Only validate complete account numbers
+    if (accountNumber.length !== 3) return null;
+    
     const classNum = accountNumber.substring(0, 1);
     const groupNum = accountNumber.substring(0, 2);
     return accountStructure[classNum]?.groups[groupNum]?.accounts[accountNumber];
@@ -46,7 +49,8 @@ const JournalTable = ({ transactions, setTransactions }) => {
 
   // Validate account combination
   const validateAccountCombination = (debitAccount, creditAccount) => {
-    if (!debitAccount || !creditAccount) return true;
+    if (!debitAccount || !creditAccount || 
+        debitAccount.length !== 3 || creditAccount.length !== 3) return true;
 
     // Internal accounts (8, 9) can only be combined with other internal accounts
     const isDebitInternal = debitAccount.startsWith('8') || debitAccount.startsWith('9');
@@ -78,29 +82,41 @@ const JournalTable = ({ transactions, setTransactions }) => {
       if (transaction.id === id) {
         const updatedTransaction = { ...transaction, [field]: value };
         
-        // Validate accounts if either account field is changed
+        // Clear any existing errors when user is typing
         if (field === 'debitAccount' || field === 'creditAccount') {
-          const debitAccount = field === 'debitAccount' ? value : transaction.debitAccount;
-          const creditAccount = field === 'creditAccount' ? value : transaction.creditAccount;
-          
-          // Validate account exists
-          if (value && !findAccount(value)) {
-            setErrors(prev => ({ ...prev, [id]: "Neplatný účet" }));
+          if (value.length < 3) {
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors[id];
+              return newErrors;
+            });
+          } else if (value.length === 3) {
+            // Only validate when account number is complete
+            const account = findAccount(value);
+            if (!account) {
+              setErrors(prev => ({ ...prev, [id]: "Neplatné číslo účtu" }));
+              return updatedTransaction;
+            }
+            
+            // Check combination only if both accounts are complete
+            const otherAccount = field === 'debitAccount' ? transaction.creditAccount : transaction.debitAccount;
+            if (otherAccount.length === 3 && !validateAccountCombination(
+              field === 'debitAccount' ? value : transaction.debitAccount,
+              field === 'creditAccount' ? value : transaction.creditAccount
+            )) {
+              setErrors(prev => ({ ...prev, [id]: "Neplatná kombinácia účtov" }));
+              return updatedTransaction;
+            }
+            
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors[id];
+              return newErrors;
+            });
+          } else if (value.length > 3) {
+            setErrors(prev => ({ ...prev, [id]: "Číslo účtu musí mať 3 číslice" }));
             return updatedTransaction;
           }
-          
-          // Validate combination
-          if (debitAccount && creditAccount && !validateAccountCombination(debitAccount, creditAccount)) {
-            setErrors(prev => ({ ...prev, [id]: "Neplatná kombinácia účtov" }));
-            return updatedTransaction;
-          }
-          
-          // Clear error if valid
-          setErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors[id];
-            return newErrors;
-          });
         }
         
         return updatedTransaction;
@@ -120,44 +136,63 @@ const JournalTable = ({ transactions, setTransactions }) => {
       return newErrors;
     });
   };
-
-  // Custom Account Input Component
+// Custom Account Input Component
   const AccountInput = ({ value, onChange, id, field }) => {
     const [suggestions, setSuggestions] = useState([]);
+    const [isOpen, setIsOpen] = useState(false);
 
     const handleSearch = (term) => {
+      if (!term) return [];
+      
       const results = [];
       Object.entries(accountStructure).forEach(([classNum, classData]) => {
         Object.entries(classData.groups).forEach(([groupNum, groupData]) => {
           Object.entries(groupData.accounts).forEach(([accountNum, accountData]) => {
             if (accountNum === "ALL") return;
             if (
-              accountNum.includes(term) ||
+              accountNum.startsWith(term) ||
               accountData.name.toLowerCase().includes(term.toLowerCase())
             ) {
               results.push({
                 number: accountNum,
                 name: accountData.name,
                 type: accountData.type,
-                kind: accountData.kind
+                kind: accountData.kind,
+                group: `${classData.name} > ${groupData.name}`
               });
             }
           });
         });
       });
-      return results.slice(0, 10);
+      
+      // Sort results - exact matches first, then starts with, then contains
+      return results
+        .sort((a, b) => {
+          if (a.number === term) return -1;
+          if (b.number === term) return 1;
+          if (a.number.startsWith(term)) return -1;
+          if (b.number.startsWith(term)) return 1;
+          return a.number.localeCompare(b.number);
+        })
+        .slice(0, 10);
     };
 
     return (
       <div className="relative flex">
-        <Popover>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             <div className="relative w-full">
               <Input
                 value={value}
                 onChange={(e) => {
-                  onChange(id, field, e.target.value);
-                  setSuggestions(handleSearch(e.target.value));
+                  const newValue = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
+                  onChange(id, field, newValue);
+                  setSuggestions(handleSearch(newValue));
+                  setIsOpen(true);
+                }}
+                onFocus={() => {
+                  setSuggestions(handleSearch(value));
+                  setIsOpen(true);
                 }}
                 className="w-full pr-8"
                 placeholder="Účet"
@@ -167,7 +202,10 @@ const JournalTable = ({ transactions, setTransactions }) => {
           </PopoverTrigger>
           <PopoverContent className="w-[400px] p-0" align="start">
             <Command>
-              <CommandInput placeholder="Hľadať účet..." />
+              <CommandInput 
+                placeholder="Hľadať účet..."
+                onValueChange={(search) => setSuggestions(handleSearch(search))}
+              />
               <CommandList>
                 <CommandEmpty>Žiadne výsledky</CommandEmpty>
                 <CommandGroup>
@@ -176,18 +214,23 @@ const JournalTable = ({ transactions, setTransactions }) => {
                       key={account.number}
                       onSelect={() => {
                         onChange(id, field, account.number);
-                        setSuggestions([]);
+                        setIsOpen(false);
                       }}
+                      className="flex flex-col py-2"
                     >
-                      <div className="flex flex-col">
+                      <div className="flex items-center justify-between w-full">
                         <div className="flex items-center">
-                          <span className="font-medium">{account.number}</span>
+                          <span className="font-mono font-medium">{account.number}</span>
                           <span className="mx-2">-</span>
                           <span>{account.name}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {account.type}, {account.kind}
-                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        <span>{account.group}</span>
+                        <span className="mx-1">•</span>
+                        <span>{account.type}</span>
+                        <span className="mx-1">•</span>
+                        <span>{account.kind}</span>
                       </div>
                     </CommandItem>
                   ))}
