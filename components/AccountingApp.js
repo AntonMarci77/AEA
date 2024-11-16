@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import JournalTable from './JournalTable';
 import FinancialStatements from './FinancialStatements';
 import TaxCalculation from './TaxCalculation';
@@ -16,14 +15,24 @@ const AccountingApp = () => {
   const [otherDeductionsBeforeLoss, setOtherDeductionsBeforeLoss] = useState(0);
   const [taxLossFromPrevious, setTaxLossFromPrevious] = useState(0);
   const [otherDeductionsAfterLoss, setOtherDeductionsAfterLoss] = useState(0);
-
-  const handleImport = (/*...same parameters...*/) => {
-    // Import handling remains the same
+const handleImport = (
+    importedTransactions,
+    importedNonTaxableRevenues,
+    importedIsNaturalPerson,
+    importedOtherDeductionsBeforeLoss,
+    importedTaxLossFromPrevious,
+    importedOtherDeductionsAfterLoss
+  ) => {
+    setTransactions(importedTransactions);
+    setNonTaxableRevenues(importedNonTaxableRevenues);
+    setIsNaturalPerson(importedIsNaturalPerson);
+    setOtherDeductionsBeforeLoss(importedOtherDeductionsBeforeLoss);
+    setTaxLossFromPrevious(importedTaxLossFromPrevious);
+    setOtherDeductionsAfterLoss(importedOtherDeductionsAfterLoss);
   };
-
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      {/* Export/Import Controls */}
+    <div className="container mx-auto p-4">
+      {/* Top Section: Export/Import */}
       <div className="mb-4">
         <ExportImportButtons
           transactions={transactions}
@@ -36,77 +45,92 @@ const AccountingApp = () => {
         />
       </div>
 
-      <Tabs defaultValue="journal" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="journal">Účtovný denník</TabsTrigger>
-          <TabsTrigger value="statements">Účtovná závierka</TabsTrigger>
-          <TabsTrigger value="tax">Daňové priznanie</TabsTrigger>
-          <TabsTrigger value="accounts">Účtová osnova</TabsTrigger>
-        </TabsList>
-
-        {/* Journal Tab */}
-        <TabsContent value="journal" className="space-y-4">
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-12 gap-4">
+        {/* Journal Section - Full Width */}
+        <div className="col-span-12">
           <JournalTable
             transactions={transactions}
             setTransactions={setTransactions}
           />
-        </TabsContent>
+        </div>
 
-        {/* Financial Statements Tab */}
-        <TabsContent value="statements" className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>Účtovná závierka</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Balance Sheet */}
-                <div className="grid grid-cols-2 gap-4">
-                  <FinancialStatements 
-                    transactions={transactions}
-                    view="balance"
-                  />
-                </div>
-                {/* Income Statement */}
-                <div className="grid grid-cols-2 gap-4">
-                  <FinancialStatements 
-                    transactions={transactions}
-                    view="income"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+        {/* Financial Statements Section - Side by Side */}
+        <div className="col-span-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Súvaha</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FinancialStatements
+                transactions={transactions}
+                type="balance"
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Tax Tab */}
-        <TabsContent value="tax" className="space-y-4">
-          <TaxCalculation
-            transactions={transactions}
-            nonTaxableRevenues={nonTaxableRevenues}
-            setNonTaxableRevenues={setNonTaxableRevenues}
-            isNaturalPerson={isNaturalPerson}
-            setIsNaturalPerson={setIsNaturalPerson}
-            otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
-            setOtherDeductionsBeforeLoss={setOtherDeductionsBeforeLoss}
-            taxLossFromPrevious={taxLossFromPrevious}
-            setTaxLossFromPrevious={setTaxLossFromPrevious}
-            otherDeductionsAfterLoss={otherDeductionsAfterLoss}
-            setOtherDeductionsAfterLoss={setOtherDeductionsAfterLoss}
-          />
-        </TabsContent>
+        <div className="col-span-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Výkaz ziskov a strát</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FinancialStatements
+                transactions={transactions}
+                type="income"
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Accounts Tab */}
-        <TabsContent value="accounts" className="space-y-4">
-          <ChartOfAccounts />
-        </TabsContent>
-      </Tabs>
+        {/* Tax Calculation Section */}
+        <div className="col-span-12">
+          <Card>
+            <CardHeader>
+              <CardTitle>Daňové priznanie</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TaxCalculation
+                transactions={transactions}
+                nonTaxableRevenues={nonTaxableRevenues}
+                setNonTaxableRevenues={setNonTaxableRevenues}
+                isNaturalPerson={isNaturalPerson}
+                setIsNaturalPerson={setIsNaturalPerson}
+                otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
+                setOtherDeductionsBeforeLoss={setOtherDeductionsBeforeLoss}
+                taxLossFromPrevious={taxLossFromPrevious}
+                setTaxLossFromPrevious={setTaxLossFromPrevious}
+                otherDeductionsAfterLoss={otherDeductionsAfterLoss}
+                setOtherDeductionsAfterLoss={setOtherDeductionsAfterLoss}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Closing Accounts Below Tabs */}
-      <div className="mt-8">
-        <ClosingAccounts
-          transactions={transactions}
-        />
+        {/* Closing Accounts */}
+        <div className="col-span-12">
+          <Card>
+            <CardHeader>
+              <CardTitle>Uzávierkové účty</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClosingAccounts
+                transactions={transactions}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Chart of Accounts - Hidden by Default */}
+        <div className="col-span-12 mt-8">
+          <details>
+            <summary className="cursor-pointer font-bold text-lg mb-4">
+              Účtová osnova
+            </summary>
+            <ChartOfAccounts />
+          </details>
+        </div>
       </div>
     </div>
   );
