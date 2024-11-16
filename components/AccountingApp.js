@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import JournalTable from './JournalTable';
 import FinancialStatements from './FinancialStatements';
 import TaxCalculation from './TaxCalculation';
@@ -8,14 +8,14 @@ import ChartOfAccounts from './ChartOfAccounts';
 import ExportImportButtons from './ExportImportButtons';
 
 const AccountingApp = () => {
-  // State management remains the same
   const [transactions, setTransactions] = useState([]);
   const [nonTaxableRevenues, setNonTaxableRevenues] = useState([]);
   const [isNaturalPerson, setIsNaturalPerson] = useState(false);
   const [otherDeductionsBeforeLoss, setOtherDeductionsBeforeLoss] = useState(0);
   const [taxLossFromPrevious, setTaxLossFromPrevious] = useState(0);
   const [otherDeductionsAfterLoss, setOtherDeductionsAfterLoss] = useState(0);
-const handleImport = (
+
+  const handleImport = (
     importedTransactions,
     importedNonTaxableRevenues,
     importedIsNaturalPerson,
@@ -30,10 +30,11 @@ const handleImport = (
     setTaxLossFromPrevious(importedTaxLossFromPrevious);
     setOtherDeductionsAfterLoss(importedOtherDeductionsAfterLoss);
   };
+
   return (
-    <div className="container mx-auto p-4">
-      {/* Top Section: Export/Import */}
-      <div className="mb-4">
+    <div className="max-w-[1400px] mx-auto p-2">
+      {/* Export/Import Controls - Compact */}
+      <div className="mb-2">
         <ExportImportButtons
           transactions={transactions}
           nonTaxableRevenues={nonTaxableRevenues}
@@ -45,92 +46,65 @@ const handleImport = (
         />
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Journal Section - Full Width */}
-        <div className="col-span-12">
+      {/* Main Content */}
+      <div className="space-y-2">
+        {/* Journal Entry Section - Compact */}
+        <Card className="p-2">
           <JournalTable
             transactions={transactions}
             setTransactions={setTransactions}
           />
-        </div>
+        </Card>
 
-        {/* Financial Statements Section - Side by Side */}
-        <div className="col-span-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Súvaha</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FinancialStatements
-                transactions={transactions}
-                type="balance"
-              />
-            </CardContent>
+        {/* Financial Statements - Side by Side */}
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="p-2">
+            <FinancialStatements
+              transactions={transactions}
+              type="balance"
+            />
+          </Card>
+          <Card className="p-2">
+            <FinancialStatements
+              transactions={transactions}
+              type="income"
+            />
           </Card>
         </div>
 
-        <div className="col-span-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Výkaz ziskov a strát</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FinancialStatements
-                transactions={transactions}
-                type="income"
-              />
-            </CardContent>
+        {/* Tax and Closing Accounts - Side by Side */}
+        <div className="grid grid-cols-2 gap-2">
+          <Card className="p-2">
+            <TaxCalculation
+              transactions={transactions}
+              nonTaxableRevenues={nonTaxableRevenues}
+              setNonTaxableRevenues={setNonTaxableRevenues}
+              isNaturalPerson={isNaturalPerson}
+              setIsNaturalPerson={setIsNaturalPerson}
+              otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
+              setOtherDeductionsBeforeLoss={setOtherDeductionsBeforeLoss}
+              taxLossFromPrevious={taxLossFromPrevious}
+              setTaxLossFromPrevious={setTaxLossFromPrevious}
+              otherDeductionsAfterLoss={otherDeductionsAfterLoss}
+              setOtherDeductionsAfterLoss={setOtherDeductionsAfterLoss}
+            />
+          </Card>
+          <Card className="p-2">
+            <ClosingAccounts
+              transactions={transactions}
+            />
           </Card>
         </div>
 
-        {/* Tax Calculation Section */}
-        <div className="col-span-12">
-          <Card>
-            <CardHeader>
-              <CardTitle>Daňové priznanie</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TaxCalculation
-                transactions={transactions}
-                nonTaxableRevenues={nonTaxableRevenues}
-                setNonTaxableRevenues={setNonTaxableRevenues}
-                isNaturalPerson={isNaturalPerson}
-                setIsNaturalPerson={setIsNaturalPerson}
-                otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
-                setOtherDeductionsBeforeLoss={setOtherDeductionsBeforeLoss}
-                taxLossFromPrevious={taxLossFromPrevious}
-                setTaxLossFromPrevious={setTaxLossFromPrevious}
-                otherDeductionsAfterLoss={otherDeductionsAfterLoss}
-                setOtherDeductionsAfterLoss={setOtherDeductionsAfterLoss}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Closing Accounts */}
-        <div className="col-span-12">
-          <Card>
-            <CardHeader>
-              <CardTitle>Uzávierkové účty</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClosingAccounts
-                transactions={transactions}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Chart of Accounts - Hidden by Default */}
-        <div className="col-span-12 mt-8">
-          <details>
-            <summary className="cursor-pointer font-bold text-lg mb-4">
-              Účtová osnova
-            </summary>
+        {/* Chart of Accounts - Collapsible */}
+        <details className="mt-2">
+          <summary className="cursor-pointer p-2 bg-gray-100 rounded-md">
+            Účtová osnova
+          </summary>
+          <div className="mt-2">
             <ChartOfAccounts />
-          </details>
-        </div>
+          </div>
+        </details>
       </div>
     </div>
   );
