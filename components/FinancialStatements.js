@@ -1,3 +1,5 @@
+import React from 'react';
+
 const FinancialStatements = ({ transactions, type }) => {
   // ... keep existing state and calculation logic ...
 
@@ -145,3 +147,5 @@ const FinancialStatements = ({ transactions, type }) => {
     </div>
   );
 };
+
+export default FinancialStatements;
