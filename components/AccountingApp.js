@@ -32,9 +32,9 @@ const AccountingApp = () => {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto p-2">
-      {/* Export/Import Controls - Compact */}
-      <div className="mb-2">
+    <div className="container mx-auto px-2 py-4 max-w-[1600px]">
+      {/* Top Controls */}
+      <div className="mb-4 flex justify-end">
         <ExportImportButtons
           transactions={transactions}
           nonTaxableRevenues={nonTaxableRevenues}
@@ -46,25 +46,30 @@ const AccountingApp = () => {
         />
       </div>
 
-      {/* Main Content */}
-      <div className="space-y-2">
-        {/* Journal Entry Section - Compact */}
-        <Card className="p-2">
+      {/* Main Content Layout */}
+      <div className="space-y-4">
+        {/* Journal Section */}
+        <Card className="p-4">
           <JournalTable
             transactions={transactions}
             setTransactions={setTransactions}
           />
         </Card>
 
-        {/* Financial Statements - Side by Side */}
-        <div className="grid grid-cols-2 gap-2">
-          <Card className="p-2">
+        {/* Financial Statements Section */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Balance Sheet */}
+          <Card className="p-4">
+            <div className="text-lg font-bold mb-4">Súvaha</div>
             <FinancialStatements
               transactions={transactions}
               type="balance"
             />
           </Card>
-          <Card className="p-2">
+
+          {/* Income Statement */}
+          <Card className="p-4">
+            <div className="text-lg font-bold mb-4">Výkaz ziskov a strát</div>
             <FinancialStatements
               transactions={transactions}
               type="income"
@@ -72,9 +77,11 @@ const AccountingApp = () => {
           </Card>
         </div>
 
-        {/* Tax and Closing Accounts - Side by Side */}
-        <div className="grid grid-cols-2 gap-2">
-          <Card className="p-2">
+        {/* Tax and Closing Accounts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Tax Calculation */}
+          <Card className="p-4">
+            <div className="text-lg font-bold mb-4">Výpočet dane</div>
             <TaxCalculation
               transactions={transactions}
               nonTaxableRevenues={nonTaxableRevenues}
@@ -89,7 +96,10 @@ const AccountingApp = () => {
               setOtherDeductionsAfterLoss={setOtherDeductionsAfterLoss}
             />
           </Card>
-          <Card className="p-2">
+
+          {/* Closing Accounts */}
+          <Card className="p-4">
+            <div className="text-lg font-bold mb-4">Uzávierkové účty</div>
             <ClosingAccounts
               transactions={transactions}
             />
@@ -97,15 +107,22 @@ const AccountingApp = () => {
         </div>
 
         {/* Chart of Accounts - Collapsible */}
-        <details className="mt-2">
-          <summary className="cursor-pointer p-2 bg-gray-100 rounded-md">
+        <details className="border rounded-lg p-4 mt-4">
+          <summary className="text-lg font-bold cursor-pointer">
             Účtová osnova
           </summary>
-          <div className="mt-2">
+          <div className="mt-4">
             <ChartOfAccounts />
           </div>
         </details>
       </div>
+
+      {/* Feedback for Balance Check */}
+      {transactions.length > 0 && balanceError && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg">
+          Súvaha nie je vyrovnaná (Aktíva ≠ Pasíva)
+        </div>
+      )}
     </div>
   );
 };

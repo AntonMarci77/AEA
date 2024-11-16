@@ -1,33 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const FinancialStatements = ({ transactions }) => {
-  const [balanceError, setBalanceError] = useState(false);
-  const [statements, setStatements] = useState({
-    balanceSheet: {
-      assets: {
-        nonCurrent: {},
-        current: {},
-        contraAccounts: {},
-        total: 0
-      },
-      equityAndLiabilities: {
-        equity: {},
-        nonCurrentLiabilities: {},
-        currentLiabilities: {},
-        profitLoss: 0,
-        total: 0
-      }
+const FinancialStatements = ({ transactions, type }) => {
+  const [balanceSheet, setBalanceSheet] = useState({
+    assets: {
+      nonCurrent: {},
+      current: {},
+      contraAccounts: {}
     },
-    incomeStatement: {
-      expenses: {},
-      revenues: {},
+    equityAndLiabilities: {
+      equity: {},
+      nonCurrentLiabilities: {},
+      currentLiabilities: {},
       profitLoss: 0
     }
   });
 
-  // Format currency
+  const [incomeStatement, setIncomeStatement] = useState({
+    expenses: {},
+    revenues: {},
+    profitLoss: 0
+  });
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('sk-SK', {
       style: 'currency',
@@ -36,228 +30,195 @@ const FinancialStatements = ({ transactions }) => {
     }).format(amount || 0);
   };
 
-  // Calculate statements (same calculation logic as before)
   useEffect(() => {
-    // Your existing calculation logic here
+    calculateStatements();
   }, [transactions]);
 
-  return (
-    <div className="space-y-8">
-      {/* Balance Sheet */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Súvaha</CardTitle>
-          {balanceError && (
-            <Alert variant="destructive">
-              <AlertDescription>
-                Súvaha nie je vyrovnaná (Aktíva ≠ Pasíva)
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-8">
-            {/* Assets Side */}
-            <div>
-              <h3 className="font-bold text-lg mb-4">Aktíva</h3>
-              
-              {/* Non-current Assets */}
-              <div className="mb-6">
-                <h4 className="font-semibold mb-2">Neobežný majetok</h4>
-                <div className="space-y-2">
-                  {Object.entries(statements.balanceSheet.assets.nonCurrent).map(([group, amount]) => (
-                    <div key={group} className="flex justify-between">
-                      <span>{group}</span>
-                      <span>{formatCurrency(amount)}</span>
-                    </div>
-                  ))}
-                  {/* Contra accounts for non-current assets */}
-                  {Object.entries(statements.balanceSheet.assets.contraAccounts)
-                    .filter(([group]) => group.startsWith('0'))
-                    .map(([group, amount]) => (
-                      <div key={group} className="flex justify-between text-red-600">
-                        <span>{group}</span>
-                        <span>({formatCurrency(Math.abs(amount))})</span>
-                      </div>
-                    ))}
-                </div>
-                <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between font-semibold">
-                    <span>Spolu neobežný majetok</span>
-                    <span>{formatCurrency(
-                      Object.values(statements.balanceSheet.assets.nonCurrent).reduce((a, b) => a + b, 0) -
-                      Object.entries(statements.balanceSheet.assets.contraAccounts)
-                        .filter(([group]) => group.startsWith('0'))
-                        .reduce((sum, [_, amount]) => sum + amount, 0)
-                    )}</span>
-                  </div>
-                </div>
-              </div>
+  const calculateStatements = () => {
+    const newBalanceSheet = {
+      assets: { nonCurrent: {}, current: {}, contraAccounts: {} },
+      equityAndLiabilities: {
+        equity: {},
+        nonCurrentLiabilities: {},
+        currentLiabilities: {},
+        profitLoss: 0
+      }
+    };
 
-              {/* Current Assets */}
-              <div className="mb-6">
-                <h4 className="font-semibold mb-2">Obežný majetok</h4>
-                <div className="space-y-2">
-                  {Object.entries(statements.balanceSheet.assets.current).map(([group, amount]) => (
-                    <div key={group} className="flex justify-between">
-                      <span>{group}</span>
-                      <span>{formatCurrency(amount)}</span>
-                    </div>
-                  ))}
-                  {/* Contra accounts for current assets */}
-                  {Object.entries(statements.balanceSheet.assets.contraAccounts)
-                    .filter(([group]) => !group.startsWith('0'))
-                    .map(([group, amount]) => (
-                      <div key={group} className="flex justify-between text-red-600">
-                        <span>{group}</span>
-                        <span>({formatCurrency(Math.abs(amount))})</span>
-                      </div>
-                    ))}
-                </div>
-                <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between font-semibold">
-                    <span>Spolu obežný majetok</span>
-                    <span>{formatCurrency(
-                      Object.values(statements.balanceSheet.assets.current).reduce((a, b) => a + b, 0) -
-                      Object.entries(statements.balanceSheet.assets.contraAccounts)
-                        .filter(([group]) => !group.startsWith('0'))
-                        .reduce((sum, [_, amount]) => sum + amount, 0)
-                    )}</span>
-                  </div>
-                </div>
-              </div>
+    const newIncomeStatement = {
+      expenses: {},
+      revenues: {},
+      profitLoss: 0
+    };
 
-              {/* Total Assets */}
-              <div className="border-t-2 border-black pt-4">
-                <div className="flex justify-between font-bold text-lg">
-                  <span>SPOLU AKTÍVA</span>
-                  <span>{formatCurrency(statements.balanceSheet.assets.total)}</span>
-                </div>
-              </div>
-            </div>
+    transactions.forEach(transaction => {
+      const amount = parseFloat(transaction.amount) || 0;
+      
+      // Process debit entries
+      if (transaction.debitAccount) {
+        const account = transaction.debitAccount;
+        const groupNum = account.substring(0, 2);
 
-            {/* Equity and Liabilities Side */}
-            <div>
-              <h3 className="font-bold text-lg mb-4">Pasíva</h3>
+        // Handle assets
+        if (account.startsWith('0') || 
+            account.startsWith('1') || 
+            account.startsWith('2') ||
+            groupNum === '31' ||
+            groupNum === '35') {
+          if (account.startsWith('0')) {
+            newBalanceSheet.assets.nonCurrent[groupNum] = 
+              (newBalanceSheet.assets.nonCurrent[groupNum] || 0) + amount;
+          } else {
+            newBalanceSheet.assets.current[groupNum] = 
+              (newBalanceSheet.assets.current[groupNum] || 0) + amount;
+          }
+        }
+        
+        // Handle expenses
+        if (account.startsWith('5')) {
+          newIncomeStatement.expenses[groupNum] = 
+            (newIncomeStatement.expenses[groupNum] || 0) + amount;
+        }
+      }
 
-              {/* Equity */}
-              <div className="mb-6">
-                <h4 className="font-semibold mb-2">Vlastné imanie</h4>
-                <div className="space-y-2">
-                  {Object.entries(statements.balanceSheet.equityAndLiabilities.equity).map(([group, amount]) => (
-                    <div key={group} className="flex justify-between">
-                      <span>{group}</span>
-                      <span>{formatCurrency(amount)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between font-semibold">
-                    <span>Výsledok hospodárenia</span>
-                    <span className={statements.balanceSheet.equityAndLiabilities.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {formatCurrency(statements.balanceSheet.equityAndLiabilities.profitLoss)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+      // Process credit entries
+      if (transaction.creditAccount) {
+        const account = transaction.creditAccount;
+        const groupNum = account.substring(0, 2);
 
-              {/* Non-current Liabilities */}
-              <div className="mb-6">
-                <h4 className="font-semibold mb-2">Dlhodobé záväzky</h4>
-                <div className="space-y-2">
-                  {Object.entries(statements.balanceSheet.equityAndLiabilities.nonCurrentLiabilities).map(([group, amount]) => (
-                    <div key={group} className="flex justify-between">
-                      <span>{group}</span>
-                      <span>{formatCurrency(amount)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        // Handle liabilities and equity
+        if (account.startsWith('4')) {
+          if (groupNum.startsWith('45') || groupNum.startsWith('46') || groupNum.startsWith('47')) {
+            newBalanceSheet.equityAndLiabilities.nonCurrentLiabilities[groupNum] = 
+              (newBalanceSheet.equityAndLiabilities.nonCurrentLiabilities[groupNum] || 0) + amount;
+          } else {
+            newBalanceSheet.equityAndLiabilities.equity[groupNum] = 
+              (newBalanceSheet.equityAndLiabilities.equity[groupNum] || 0) + amount;
+          }
+        }
 
-              {/* Current Liabilities */}
-              <div className="mb-6">
-                <h4 className="font-semibold mb-2">Krátkodobé záväzky</h4>
-                <div className="space-y-2">
-                  {Object.entries(statements.balanceSheet.equityAndLiabilities.currentLiabilities).map(([group, amount]) => (
-                    <div key={group} className="flex justify-between">
-                      <span>{group}</span>
-                      <span>{formatCurrency(amount)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        // Handle revenues
+        if (account.startsWith('6')) {
+          newIncomeStatement.revenues[groupNum] = 
+            (newIncomeStatement.revenues[groupNum] || 0) + amount;
+        }
+      }
+    });
 
-              {/* Total Equity and Liabilities */}
-              <div className="border-t-2 border-black pt-4">
-                <div className="flex justify-between font-bold text-lg">
-                  <span>SPOLU PASÍVA</span>
-                  <span>{formatCurrency(statements.balanceSheet.equityAndLiabilities.total)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    // Calculate profit/loss
+    const totalRevenues = Object.values(newIncomeStatement.revenues).reduce((sum, val) => sum + val, 0);
+    const totalExpenses = Object.values(newIncomeStatement.expenses).reduce((sum, val) => sum + val, 0);
+    newIncomeStatement.profitLoss = totalRevenues - totalExpenses;
 
-      {/* Income Statement */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Výkaz ziskov a strát</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-8">
-            {/* Expenses Side */}
-            <div>
-              <h3 className="font-bold text-lg mb-4">Náklady</h3>
-              <div className="space-y-2">
-                {Object.entries(statements.incomeStatement.expenses).map(([group, amount]) => (
-                  <div key={group} className="flex justify-between">
-                    <span>{group}</span>
-                    <span>{formatCurrency(Math.abs(amount))}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t pt-2 mt-4">
-                <div className="flex justify-between font-bold">
-                  <span>Náklady spolu</span>
-                  <span>{formatCurrency(
-                    Object.values(statements.incomeStatement.expenses).reduce((a, b) => a + Math.abs(b), 0)
-                  )}</span>
-                </div>
-              </div>
-            </div>
+    // Add profit/loss to balance sheet
+    newBalanceSheet.equityAndLiabilities.profitLoss = newIncomeStatement.profitLoss;
 
-            {/* Revenues Side */}
-            <div>
-              <h3 className="font-bold text-lg mb-4">Výnosy</h3>
-              <div className="space-y-2">
-                {Object.entries(statements.incomeStatement.revenues).map(([group, amount]) => (
-                  <div key={group} className="flex justify-between">
-                    <span>{group}</span>
-                    <span>{formatCurrency(amount)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t pt-2 mt-4">
-                <div className="flex justify-between font-bold">
-                  <span>Výnosy spolu</span>
-                  <span>{formatCurrency(
-                    Object.values(statements.incomeStatement.revenues).reduce((a, b) => a + b, 0)
-                  )}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+    setBalanceSheet(newBalanceSheet);
+    setIncomeStatement(newIncomeStatement);
+  };
+
+  if (type === 'balance') {
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        {/* Assets Side */}
+        <div>
+          <h3 className="font-bold mb-2">Aktíva</h3>
           
-          {/* Profit/Loss at the bottom */}
-          <div className="border-t-2 border-black mt-8 pt-4">
-            <div className="flex justify-between font-bold text-lg">
-              <span>Výsledok hospodárenia</span>
-              <span className={statements.incomeStatement.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}>
-                {formatCurrency(statements.incomeStatement.profitLoss)}
-              </span>
-            </div>
+          {/* Non-current Assets */}
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm">Neobežný majetok</h4>
+            {Object.entries(balanceSheet.assets.nonCurrent).map(([group, amount]) => (
+              <div key={group} className="flex justify-between text-sm">
+                <span>{group}</span>
+                <span>{formatCurrency(amount)}</span>
+              </div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Current Assets */}
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm">Obežný majetok</h4>
+            {Object.entries(balanceSheet.assets.current).map(([group, amount]) => (
+              <div key={group} className="flex justify-between text-sm">
+                <span>{group}</span>
+                <span>{formatCurrency(amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Equity and Liabilities Side */}
+        <div>
+          <h3 className="font-bold mb-2">Pasíva</h3>
+          
+          {/* Equity */}
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm">Vlastné imanie</h4>
+            {Object.entries(balanceSheet.equityAndLiabilities.equity).map(([group, amount]) => (
+              <div key={group} className="flex justify-between text-sm">
+                <span>{group}</span>
+                <span>{formatCurrency(amount)}</span>
+              </div>
+            ))}
+            {balanceSheet.equityAndLiabilities.profitLoss !== 0 && (
+              <div className="flex justify-between text-sm font-semibold">
+                <span>Výsledok hospodárenia</span>
+                <span className={balanceSheet.equityAndLiabilities.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {formatCurrency(balanceSheet.equityAndLiabilities.profitLoss)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Liabilities */}
+          <div>
+            <h4 className="font-semibold text-sm">Záväzky</h4>
+            {Object.entries(balanceSheet.equityAndLiabilities.nonCurrentLiabilities).map(([group, amount]) => (
+              <div key={group} className="flex justify-between text-sm">
+                <span>{group}</span>
+                <span>{formatCurrency(amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Income Statement
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      {/* Expenses Side */}
+      <div>
+        <h3 className="font-bold mb-2">Náklady</h3>
+        {Object.entries(incomeStatement.expenses).map(([group, amount]) => (
+          <div key={group} className="flex justify-between text-sm">
+            <span>{group}</span>
+            <span>{formatCurrency(amount)}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Revenues Side */}
+      <div>
+        <h3 className="font-bold mb-2">Výnosy</h3>
+        {Object.entries(incomeStatement.revenues).map(([group, amount]) => (
+          <div key={group} className="flex justify-between text-sm">
+            <span>{group}</span>
+            <span>{formatCurrency(amount)}</span>
+          </div>
+        ))}
+        
+        {/* Profit/Loss */}
+        <div className="mt-4 pt-2 border-t">
+          <div className="flex justify-between font-semibold">
+            <span>Výsledok hospodárenia</span>
+            <span className={incomeStatement.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}>
+              {formatCurrency(incomeStatement.profitLoss)}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
