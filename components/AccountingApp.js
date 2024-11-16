@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import JournalTable from './JournalTable';
 import FinancialStatements from './FinancialStatements';
 import TaxCalculation from './TaxCalculation';
@@ -32,97 +31,88 @@ const AccountingApp = () => {
   };
 
   return (
-    <div className="container mx-auto px-2 py-4 max-w-[1600px]">
-      {/* Top Controls */}
-      <div className="mb-4 flex justify-end">
-        <ExportImportButtons
-          transactions={transactions}
-          nonTaxableRevenues={nonTaxableRevenues}
-          isNaturalPerson={isNaturalPerson}
-          otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
-          taxLossFromPrevious={taxLossFromPrevious}
-          otherDeductionsAfterLoss={otherDeductionsAfterLoss}
-          onImport={handleImport}
-        />
-      </div>
-
-      {/* Main Content Layout */}
-      <div className="space-y-4">
-        {/* Journal Section */}
-        <Card className="p-4">
-          <JournalTable
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-[1400px] mx-auto p-4">
+        {/* Export/Import - Small and Compact */}
+        <div className="flex justify-end mb-2">
+          <ExportImportButtons
             transactions={transactions}
-            setTransactions={setTransactions}
+            nonTaxableRevenues={nonTaxableRevenues}
+            isNaturalPerson={isNaturalPerson}
+            otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
+            taxLossFromPrevious={taxLossFromPrevious}
+            otherDeductionsAfterLoss={otherDeductionsAfterLoss}
+            onImport={handleImport}
           />
-        </Card>
-
-        {/* Financial Statements Section */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Balance Sheet */}
-          <Card className="p-4">
-            <div className="text-lg font-bold mb-4">Súvaha</div>
-            <FinancialStatements
-              transactions={transactions}
-              type="balance"
-            />
-          </Card>
-
-          {/* Income Statement */}
-          <Card className="p-4">
-            <div className="text-lg font-bold mb-4">Výkaz ziskov a strát</div>
-            <FinancialStatements
-              transactions={transactions}
-              type="income"
-            />
-          </Card>
         </div>
 
-        {/* Tax and Closing Accounts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Tax Calculation */}
-          <Card className="p-4">
-            <div className="text-lg font-bold mb-4">Výpočet dane</div>
-            <TaxCalculation
-              transactions={transactions}
-              nonTaxableRevenues={nonTaxableRevenues}
-              setNonTaxableRevenues={setNonTaxableRevenues}
-              isNaturalPerson={isNaturalPerson}
-              setIsNaturalPerson={setIsNaturalPerson}
-              otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
-              setOtherDeductionsBeforeLoss={setOtherDeductionsBeforeLoss}
-              taxLossFromPrevious={taxLossFromPrevious}
-              setTaxLossFromPrevious={setTaxLossFromPrevious}
-              otherDeductionsAfterLoss={otherDeductionsAfterLoss}
-              setOtherDeductionsAfterLoss={setOtherDeductionsAfterLoss}
-            />
-          </Card>
-
-          {/* Closing Accounts */}
-          <Card className="p-4">
-            <div className="text-lg font-bold mb-4">Uzávierkové účty</div>
-            <ClosingAccounts
-              transactions={transactions}
-            />
-          </Card>
-        </div>
-
-        {/* Chart of Accounts - Collapsible */}
-        <details className="border rounded-lg p-4 mt-4">
-          <summary className="text-lg font-bold cursor-pointer">
-            Účtová osnova
-          </summary>
-          <div className="mt-4">
-            <ChartOfAccounts />
+        <div className="space-y-4">
+          {/* Journal Section - Compact */}
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="p-4">
+              <h2 className="text-lg font-semibold mb-4">Účtovný denník</h2>
+              <JournalTable
+                transactions={transactions}
+                setTransactions={setTransactions}
+              />
+            </div>
           </div>
-        </details>
-      </div>
 
-      {/* Feedback for Balance Check */}
-      {transactions.length > 0 && balanceError && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg">
-          Súvaha nie je vyrovnaná (Aktíva ≠ Pasíva)
+          {/* Financial Statements - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white shadow rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-4">Súvaha</h2>
+              <FinancialStatements
+                transactions={transactions}
+                type="balance"
+              />
+            </div>
+            <div className="bg-white shadow rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-4">Výkaz ziskov a strát</h2>
+              <FinancialStatements
+                transactions={transactions}
+                type="income"
+              />
+            </div>
+          </div>
+
+          {/* Tax and Closing Accounts - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white shadow rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-4">Výpočet dane</h2>
+              <TaxCalculation
+                transactions={transactions}
+                nonTaxableRevenues={nonTaxableRevenues}
+                setNonTaxableRevenues={setNonTaxableRevenues}
+                isNaturalPerson={isNaturalPerson}
+                setIsNaturalPerson={setIsNaturalPerson}
+                otherDeductionsBeforeLoss={otherDeductionsBeforeLoss}
+                setOtherDeductionsBeforeLoss={setOtherDeductionsBeforeLoss}
+                taxLossFromPrevious={taxLossFromPrevious}
+                setTaxLossFromPrevious={setTaxLossFromPrevious}
+                otherDeductionsAfterLoss={otherDeductionsAfterLoss}
+                setOtherDeductionsAfterLoss={setOtherDeductionsAfterLoss}
+              />
+            </div>
+            <div className="bg-white shadow rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-4">Uzávierkové účty</h2>
+              <ClosingAccounts
+                transactions={transactions}
+              />
+            </div>
+          </div>
+
+          {/* Chart of Accounts - Collapsible */}
+          <details className="bg-white shadow rounded-lg">
+            <summary className="p-4 cursor-pointer font-semibold hover:bg-gray-50">
+              Účtová osnova
+            </summary>
+            <div className="p-4 border-t">
+              <ChartOfAccounts />
+            </div>
+          </details>
         </div>
-      )}
+      </div>
     </div>
   );
 };
